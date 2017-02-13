@@ -16,7 +16,7 @@ var Strict = false
 var EnableInterpolation = false
 
 // maxLookup is the max lookup index for predefined lookup tables
-const maxLookup = 100
+const maxLookup = 200 // EAVE changed from 100 because of https://github.com/mgutz/dat/issues/54
 
 // atoiTab holds "0" => 0, "1" .. 1 ... "99" -> 99 to avoid using strconv.Atoi()
 var atoiTab = make(map[string]int, maxLookup)
