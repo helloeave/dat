@@ -7,12 +7,12 @@ import (
 	"io/ioutil"
 	"strings"
 
+	"github.com/helloeave/dat/dat"
+	"github.com/helloeave/dat/sqlx-runner"
 	"github.com/mgutz/ansi"
 	"github.com/mgutz/str"
 	do "gopkg.in/godo.v2"
 	"gopkg.in/godo.v2/util"
-	"gopkg.in/mgutz/dat.v2/dat"
-	"gopkg.in/mgutz/dat.v2/sqlx-runner"
 )
 
 func mapBytesToString(m map[string]interface{}) {

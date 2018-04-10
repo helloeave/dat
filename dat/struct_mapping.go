@@ -2,10 +2,11 @@ package dat
 
 import (
 	"fmt"
-	"github.com/mgutz/str"
 	"reflect"
 
-	"gopkg.in/mgutz/dat.v2/reflectx"
+	"github.com/mgutz/str"
+
+	"github.com/helloeave/dat/reflectx"
 )
 
 var fieldMapper = reflectx.NewMapperTagFunc("db", nil, nil)
