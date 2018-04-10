@@ -1,6 +1,6 @@
 package dat
 
-import "gopkg.in/mgutz/dat.v2/common"
+import "github.com/helloeave/dat/common"
 
 // Expression holds a sub expression.
 type Expression struct {

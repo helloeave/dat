@@ -11,11 +11,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/helloeave/dat/dat"
+	"github.com/helloeave/dat/kvs"
 	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
 	guid "github.com/satori/go.uuid"
-	"gopkg.in/mgutz/dat.v2/dat"
-	"gopkg.in/mgutz/dat.v2/kvs"
 )
 
 // database is the interface for sqlx's DB or Tx against which

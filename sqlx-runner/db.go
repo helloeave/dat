@@ -4,8 +4,8 @@ import (
 	"database/sql"
 	"log"
 
+	"github.com/helloeave/dat/dat"
 	"github.com/jmoiron/sqlx"
-	"gopkg.in/mgutz/dat.v2/dat"
 )
 
 // DB represents an abstract database connection pool.

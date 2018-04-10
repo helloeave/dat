@@ -6,8 +6,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/helloeave/dat/dat"
 	"github.com/jmoiron/sqlx"
-	"gopkg.in/mgutz/dat.v2/dat"
 )
 
 const (
