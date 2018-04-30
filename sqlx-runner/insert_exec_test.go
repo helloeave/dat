@@ -155,7 +155,7 @@ func TestInsertReal_Nullability_Record(t *testing.T) {
 		InsertInto("people").
 		Columns("name", "nullable", "nullable_map", "nullable_at").
 		Record(person).
-		Returning("id", "name", "nullable", "nullable_map", "nullable_at").
+		Returning("id", "name", "email", "nullable", "nullable_map", "nullable_at").
 		QueryStruct(&person)
 
 	require.NoError(t, err)
@@ -182,9 +182,9 @@ func TestInsertReal_Nullability_Record(t *testing.T) {
 
 	err = s.
 		InsertInto("people").
-		Columns("name", "nullable", "nullable_map").
+		Columns("name", "email", "nullable", "nullable_map").
 		Record(person).
-		Returning("id", "name", "nullable", "nullable_map", "nullable_at").
+		Returning("id", "name", "email", "nullable", "nullable_map", "nullable_at").
 		QueryStruct(&person)
 
 	require.NoError(t, err)
