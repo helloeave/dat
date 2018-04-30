@@ -8,6 +8,8 @@ import (
 	"github.com/helloeave/dat/common"
 	"github.com/helloeave/dat/dat"
 	"github.com/helloeave/dat/postgres"
+	"github.com/lib/pq/hstore"
+	"github.com/stretchr/testify/require"
 	"gopkg.in/stretchr/testify.v1/assert"
 )
 
@@ -94,7 +96,7 @@ func TestInsertReal(t *testing.T) {
 		Values("Barack", "obama0@whitehouse.gov").
 		Returning("id").
 		QueryScalar(&id)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.True(t, id > 0)
 
 	// Insert by specifying a record (ptr to struct)
@@ -106,35 +108,77 @@ func TestInsertReal(t *testing.T) {
 		InsertInto("people").
 		Columns("name", "email").
 		Record(&person).
-		Returning("id", "created_at").
+		Returning("id", "email", "created_at").
 		QueryStruct(&person)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.True(t, person.ID > 0)
 	assert.NotEqual(t, person.CreatedAt, dat.NullTime{})
 
 	// Insert by specifying a record (struct)
-	person2 := Person{Name: "Barack"}
+	person2 := Person{
+		Name: "Barack",
+		NullableMap: hstore.Hstore{
+			Map: map[string]sql.NullString{
+				"key1": {String: "value1", Valid: true},
+			},
+		},
+	}
 	person2.Email.Valid = true
 	person2.Email.String = "obama2@whitehouse.gov"
 	err = s.
-		InsertInto("people").Columns("name", "email").
+		InsertInto("people").
+		Columns("*").
+		Blacklist("id", "created_at", "nullable_at").
 		Record(person2).
-		Returning("id").
+		Returning("*").
 		QueryStruct(&person2)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.True(t, person2.ID > 0)
 	assert.NotEqual(t, person.ID, person2.ID)
+	assert.Equal(t, sql.NullString{String: "value1", Valid: true}, person2.NullableMap.Map["key1"])
 
-	person3 := Person{Name: "Barack", Nullable: nil}
+	person3 := Person{
+		Name:        "Barack",
+		Nullable:    nil,
+		NullableMap: hstore.Hstore{},
+		NullableAt:  nil,
+	}
 	err = s.
 		InsertInto("people").
-		Columns("name", "nullable").
+		Columns("name", "nullable", "nullable_map").
 		Record(person3).
-		Returning("id", "nullable").
+		Returning("id", "name", "nullable", "nullable_map", "nullable_at").
 		QueryStruct(&person3)
+	require.NoError(t, err)
 	assert.True(t, person3.ID > 0)
 	assert.NotEqual(t, person2.ID, person3.ID)
 	assert.Nil(t, person3.Nullable)
+	assert.Nil(t, person3.NullableMap.Map)
+	assert.False(t, person3.Email.Valid)
+	assert.Empty(t, person3.Email.String)
+	assert.NotNil(t, person3.NullableAt) // set by DB default
+
+	person4 := Person{
+		Name:        "Barack",
+		Nullable:    nil,
+		NullableMap: hstore.Hstore{},
+		NullableAt:  nil,
+	}
+	err = s.
+		InsertInto("people").
+		Columns("*").
+		Blacklist("id", "created_at", "nullable_at").
+		Record(&person4).
+		Returning("*").
+		QueryStruct(&person4)
+	require.NoError(t, err)
+	assert.True(t, person4.ID > 0)
+	assert.NotEqual(t, person3.ID, person4.ID)
+	assert.Nil(t, person4.Nullable)
+	assert.Nil(t, person4.NullableMap.Map)
+	assert.False(t, person4.Email.Valid)
+	assert.Empty(t, person4.Email.String)
+	assert.NotNil(t, person4.NullableAt) // set by DB default
 }
 
 func TestInsertMultipleRecords(t *testing.T) {

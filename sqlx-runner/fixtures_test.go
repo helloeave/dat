@@ -1,6 +1,11 @@
 package runner
 
-import "github.com/helloeave/dat/dat"
+import (
+	"time"
+
+	"github.com/helloeave/dat/dat"
+	"github.com/lib/pq/hstore"
+)
 
 type Team struct {
 	ID        int64  `db:"id"`
@@ -9,16 +14,18 @@ type Team struct {
 }
 
 type Person struct {
-	ID        int64           `db:"id"`
-	Amount    dat.NullFloat64 `db:"amount"`
-	Doc       dat.NullString  `db:"doc"`
-	Email     dat.NullString  `db:"email"`
-	Foo       string          `db:"foo"`
-	Image     []byte          `db:"image"`
-	Key       dat.NullString  `db:"key"`
-	Name      string          `db:"name"`
-	CreatedAt dat.NullTime    `db:"created_at"`
-	Nullable  *string         `db:"nullable"`
+	ID          int64           `db:"id"`
+	Amount      dat.NullFloat64 `db:"amount"`
+	Doc         dat.NullString  `db:"doc"`
+	Email       dat.NullString  `db:"email"`
+	Foo         string          `db:"foo"`
+	Image       []byte          `db:"image"`
+	Key         dat.NullString  `db:"key"`
+	Name        string          `db:"name"`
+	CreatedAt   dat.NullTime    `db:"created_at"`
+	NullableAt  *time.Time      `db:"nullable_at"`
+	Nullable    *string         `db:"nullable"`
+	NullableMap hstore.Hstore   `db:"nullable_map"`
 
 	Posts []*Post `json:"posts"`
 }
@@ -80,7 +87,9 @@ const createTables = `
 		image bytea,
 		key text,
 		name text NOT NULL,
+		nullable_map hstore,
 		created_at timestamptz default now(),
+		nullable_at timestamptz default now(),
 		nullable text
 	);
 	CREATE TABLE posts (
