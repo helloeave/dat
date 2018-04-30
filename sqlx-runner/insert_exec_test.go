@@ -115,14 +115,7 @@ func TestInsertReal(t *testing.T) {
 	assert.NotEqual(t, person.CreatedAt, dat.NullTime{})
 
 	// Insert by specifying a record (struct)
-	person2 := Person{
-		Name: "Barack",
-		NullableMap: hstore.Hstore{
-			Map: map[string]sql.NullString{
-				"key1": {String: "value1", Valid: true},
-			},
-		},
-	}
+	person2 := Person{Name: "Barack"}
 	person2.Email.Valid = true
 	person2.Email.String = "obama2@whitehouse.gov"
 	err = s.
@@ -135,51 +128,133 @@ func TestInsertReal(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, person2.ID > 0)
 	assert.NotEqual(t, person.ID, person2.ID)
-	assert.Equal(t, sql.NullString{String: "value1", Valid: true}, person2.NullableMap.Map["key1"])
+}
 
-	// The below test for handling nullability
-	person3 := Person{
-		Name:        "Barack",
+// TestInsertReal_Nullability_Record tests that *type inserts null when *type == nil
+// and inserts the value pointed to when that value is not nil.
+// The type's default value SHOULD NOT be inserted when *type == nil.
+
+// The difference between TestInsertReal_Nullability_Record & TestInsertReal_Nullability_PtrToRecord
+// is Record(struct) is called in the former, whereas Record(&struct) is called in the latter.
+
+// Previously, Record(&struct) would insert the type's default value when *type == nil.
+// So confirming that doesn't happen here.
+func TestInsertReal_Nullability_Record(t *testing.T) {
+	// Insert by specifying values
+	s := beginTxWithFixtures()
+	defer s.AutoRollback()
+
+	// with nil values
+	person := Person{
+		Name:        "J", // test table has not null constraint on name
 		Nullable:    nil,
 		NullableMap: hstore.Hstore{},
 		NullableAt:  nil,
 	}
+	err := s.
+		InsertInto("people").
+		Columns("name", "nullable", "nullable_map", "nullable_at").
+		Record(person).
+		Returning("id", "name", "nullable", "nullable_map", "nullable_at").
+		QueryStruct(&person)
+
+	require.NoError(t, err)
+	assert.True(t, person.ID > 0)
+	assert.Nil(t, person.Nullable)
+	assert.Nil(t, person.NullableMap.Map)
+	assert.False(t, person.Email.Valid)
+	assert.Empty(t, person.Email.String)
+	assert.Nil(t, person.NullableAt) // nil inserted, so DB default not used
+
+	// with non-nil values
+	yep := "yep"
+	person = Person{
+		Name:     "Sara",
+		Nullable: &yep,
+		NullableMap: hstore.Hstore{
+			Map: map[string]sql.NullString{
+				"key1": {String: "value1", Valid: true},
+			},
+		},
+	}
+	person.Email.String = "sara@helloeave.com"
+	person.Email.Valid = true
+
 	err = s.
 		InsertInto("people").
 		Columns("name", "nullable", "nullable_map").
-		Record(person3).
+		Record(person).
 		Returning("id", "name", "nullable", "nullable_map", "nullable_at").
-		QueryStruct(&person3)
-	require.NoError(t, err)
-	assert.True(t, person3.ID > 0)
-	assert.NotEqual(t, person2.ID, person3.ID)
-	assert.Nil(t, person3.Nullable)
-	assert.Nil(t, person3.NullableMap.Map)
-	assert.False(t, person3.Email.Valid)
-	assert.Empty(t, person3.Email.String)
-	assert.NotNil(t, person3.NullableAt) // set by DB default
+		QueryStruct(&person)
 
-	person4 := Person{
-		Name:        "Barack",
+	require.NoError(t, err)
+	assert.True(t, person.ID > 0)
+	assert.Equal(t, "Sara", person.Name)
+	assert.Equal(t, &yep, person.Nullable)
+	assert.True(t, person.Email.Valid)
+	assert.Equal(t, "sara@helloeave.com", person.Email.String)
+	assert.NotNil(t, person.NullableAt) // "nullable_at" not in Columns, so DB default used
+	assert.Equal(t, sql.NullString{String: "value1", Valid: true}, person.NullableMap.Map["key1"])
+}
+
+func TestInsertReal_Nullability_PtrToRecord(t *testing.T) {
+	// Insert by specifying values
+	s := beginTxWithFixtures()
+	defer s.AutoRollback()
+
+	// with nil values
+	person := Person{
+		Name:        "Whoever",
 		Nullable:    nil,
 		NullableMap: hstore.Hstore{},
 		NullableAt:  nil,
 	}
+	err := s.
+		InsertInto("people").
+		Columns("*").
+		Blacklist("id", "created_at").
+		Record(&person).
+		Returning("*").
+		QueryStruct(&person)
+
+	require.NoError(t, err)
+	assert.True(t, person.ID > 0)
+	assert.Nil(t, person.Nullable)
+	assert.Nil(t, person.NullableMap.Map)
+	assert.False(t, person.Email.Valid)
+	assert.Empty(t, person.Email.String)
+	assert.Nil(t, person.NullableAt) // not blacklisted, so not set to DB default
+
+	// with non-nil values
+	yep := "yep"
+	person = Person{
+		Name:     "Emilio",
+		Nullable: &yep,
+		NullableMap: hstore.Hstore{
+			Map: map[string]sql.NullString{
+				"key1": {String: "value1", Valid: true},
+			},
+		},
+	}
+	person.Email.String = "emilio@helloeave.com"
+	person.Email.Valid = true
+
 	err = s.
 		InsertInto("people").
 		Columns("*").
 		Blacklist("id", "created_at", "nullable_at").
-		Record(&person4).
+		Record(&person).
 		Returning("*").
-		QueryStruct(&person4)
+		QueryStruct(&person)
+
 	require.NoError(t, err)
-	assert.True(t, person4.ID > 0)
-	assert.NotEqual(t, person3.ID, person4.ID)
-	assert.Nil(t, person4.Nullable)
-	assert.Nil(t, person4.NullableMap.Map)
-	assert.False(t, person4.Email.Valid)
-	assert.Empty(t, person4.Email.String)
-	assert.NotNil(t, person4.NullableAt) // set by DB default
+	assert.True(t, person.ID > 0)
+	assert.Equal(t, "Emilio", person.Name)
+	assert.Equal(t, &yep, person.Nullable)
+	assert.True(t, person.Email.Valid)
+	assert.Equal(t, "emilio@helloeave.com", person.Email.String)
+	assert.NotNil(t, person.NullableAt) // set by DB default
+	assert.Equal(t, sql.NullString{String: "value1", Valid: true}, person.NullableMap.Map["key1"])
 }
 
 func TestInsertMultipleRecords(t *testing.T) {
