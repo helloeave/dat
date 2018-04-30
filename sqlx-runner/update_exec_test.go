@@ -87,6 +87,22 @@ func TestUpdateRealNullable(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, person.Nullable)
 	assert.Equal(t, *person.Nullable, "obama2@whitehouse.gov")
+
+	// set back to null
+	_, err = s.
+		Update("people").
+		Set("nullable", nil).
+		Where("id = $1", person.ID).
+		Exec()
+	assert.NoError(t, err)
+
+	err = s.
+		Select("*").
+		From("people").
+		Where("id = $1", person.ID).
+		QueryStruct(&person)
+	assert.NoError(t, err)
+	assert.Nil(t, person.Nullable)
 }
 
 func TestUpdateReturningStar(t *testing.T) {
