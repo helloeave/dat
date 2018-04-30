@@ -160,7 +160,7 @@ func (m *Mapper) FieldsByName(v reflect.Value, names []string) []reflect.Value {
 		if !ok {
 			vals = append(vals, *new(reflect.Value))
 		} else {
-			vals = append(vals, FieldByIndexes(v, fi.Index))
+			vals = append(vals, FieldByIndexesReadOnly(v, fi.Index))
 		}
 	}
 	return vals
