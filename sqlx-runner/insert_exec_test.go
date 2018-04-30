@@ -137,6 +137,7 @@ func TestInsertReal(t *testing.T) {
 	assert.NotEqual(t, person.ID, person2.ID)
 	assert.Equal(t, sql.NullString{String: "value1", Valid: true}, person2.NullableMap.Map["key1"])
 
+	// The below test for handling nullability
 	person3 := Person{
 		Name:        "Barack",
 		Nullable:    nil,
