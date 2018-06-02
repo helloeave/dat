@@ -1,6 +1,10 @@
 package dat
 
-import "reflect"
+import (
+	"reflect"
+
+	"github.com/helloeave/dat/log"
+)
 
 // UpsertBuilder contains the clauses for an INSERT statement
 type UpsertBuilder struct {
@@ -20,7 +24,7 @@ type UpsertBuilder struct {
 // NewUpsertBuilder creates a new UpsertBuilder for the given table.
 func NewUpsertBuilder(table string) *UpsertBuilder {
 	if table == "" {
-		logger.Error("Insect requires a table name.")
+		log.Err("Insect requires a table name.")
 		return nil
 	}
 	return &UpsertBuilder{table: table, isInterpolated: EnableInterpolation}

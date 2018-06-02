@@ -107,7 +107,7 @@
 Get it
 
 ```sh
-go get -u gopkg.in/mgutz/dat.v2/sqlx-runner
+go get -u github.com/helloeave/dat
 ```
 
 Use it
@@ -117,8 +117,9 @@ import (
     "database/sql"
 
     _ "github.com/lib/pq"
-    "gopkg.in/mgutz/dat.v2"
-    "gopkg.in/mgutz/dat.v2/sqlx-runner"
+    "github.com/helloeave/dat/dat"
+    "github.com/helloeave/dat/log"
+    "github.com/helloeave/dat/sqlx-runner"
 )
 
 // global database (pooling provided by SQL driver)
@@ -147,6 +148,9 @@ func init() {
 
     // Log any query over 10ms as warnings. (optional)
     runner.LogQueriesThreshold = 10 * time.Millisecond
+    
+    // Control debug, sql, and err logging
+    log.SetSQL(log.Printf)
 
     DB = runner.NewDB(db, "postgres")
 }
@@ -295,17 +299,21 @@ b := DB.SQL("SELECT * FROM posts WHERE id IN $1", ids)
 b.MustInterpolate() == "SELECT * FROM posts WHERE id IN (10,20,30,40,50)"
 ```
 
-### Tracing SQL
+### Logging & SQL Tracing
 
-`dat` uses [logxi](https://github.com/mgutz/logxi) for logging. By default,
-*logxi* logs all warnings and errors to the console. `dat` logs the
-SQL and its arguments on any error. In addition, `dat` logs slow queries
-as warnings if `runner.LogQueriesThreshold > 0`
+`dat` uses a simple `type LogFunc = func(string, ...interface{})` to allow a consumer to provide their own logging for debug, sql, and error messages. By default, debug and sql are noop, and error will write to log.Printf. In addition, `dat` logs slow queries if `runner.LogQueriesThreshold > 0` and a sql LogFunc is provided.
 
-To trace all SQL, set environment variable
+To set any of the loggers, call the matching `log.Set*` method with a LogFunc.
 
-```sh
-LOGXI=dat* yourapp
+```go
+sugar := zap.NewExample().Sugar().Named("sql")
+
+log.SetDebug(stdlog.Printf)
+log.SetSQL(func(msg string, vals ...interface{}) {
+   defer sugar.Sync()
+   sugar.Infow(msg, vals...)
+})
+
 ```
 
 ## CRUD

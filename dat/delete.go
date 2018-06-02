@@ -1,5 +1,7 @@
 package dat
 
+import "github.com/helloeave/dat/log"
+
 // DeleteBuilder contains the clauses for a DELETE statement
 type DeleteBuilder struct {
 	Execer
@@ -14,7 +16,7 @@ type DeleteBuilder struct {
 // NewDeleteBuilder creates a new DeleteBuilder for the given table.
 func NewDeleteBuilder(table string) *DeleteBuilder {
 	if table == "" {
-		logger.Error("DeleteFrom requires a table name.")
+		log.Err("DeleteFrom requires a table name.")
 		return nil
 	}
 	return &DeleteBuilder{table: table, isInterpolated: EnableInterpolation}
