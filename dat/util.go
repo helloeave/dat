@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/helloeave/dat/log"
 	"github.com/mgutz/str"
 
 	"github.com/helloeave/dat/common"
@@ -280,7 +281,7 @@ func ParseDir(dir string, version string) error {
 		if fi.IsDir() {
 			return nil
 		}
-		logger.Debug("MustRegisterFunctionsInDir", "dir", dir, "path", path)
+		log.Debug("MustRegisterFunctionsInDir", "dir", dir, "path", path)
 
 		// bytes, err := ioutil.ReadFile(path) // path is the path to the file.
 		// if err != nil {

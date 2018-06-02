@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/helloeave/dat/dat"
+	"github.com/helloeave/dat/log"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -81,7 +82,7 @@ func (ex *Execer) Cancel() error {
 
 	_, err := ex.execSQL(q, nil)
 	if err != nil {
-		logger.Error("While trying to cancel a query", err)
+		log.Error("While trying to cancel a query", err)
 	}
 	return dat.ErrTimedout
 }

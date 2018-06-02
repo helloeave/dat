@@ -7,18 +7,15 @@ import (
 	"github.com/cenkalti/backoff"
 	"github.com/helloeave/dat/dat"
 	"github.com/helloeave/dat/kvs"
+	"github.com/helloeave/dat/log"
 	"github.com/helloeave/dat/postgres"
-	"github.com/mgutz/logxi/v1"
 )
-
-var logger log.Logger
 
 // LogQueriesThreshold is the threshold for logging "slow" queries
 var LogQueriesThreshold time.Duration
 
 func init() {
 	dat.Dialect = postgres.New()
-	logger = log.New("dat:sqlx")
 }
 
 // Cache caches query results.
@@ -41,7 +38,7 @@ func MustPing(db *sql.DB) {
 	// so operations that take a while to fail could run in quick succession.
 	for range ticker.C {
 		if err = db.Ping(); err != nil {
-			logger.Info("pinging database...", err.Error())
+			log.Debug("pinging database...", err.Error())
 			continue
 		}
 

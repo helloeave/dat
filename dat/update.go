@@ -3,6 +3,8 @@ package dat
 import (
 	"reflect"
 	"strconv"
+
+	"github.com/helloeave/dat/log"
 )
 
 // UpdateBuilder contains the clauses for an UPDATE statement
@@ -31,7 +33,7 @@ type setClause struct {
 // NewUpdateBuilder creates a new UpdateBuilder for the given table
 func NewUpdateBuilder(table string) *UpdateBuilder {
 	if table == "" {
-		logger.Error("Update requires a table name")
+		log.Err("Update requires a table name")
 		return nil
 	}
 	return &UpdateBuilder{table: table, isInterpolated: EnableInterpolation}

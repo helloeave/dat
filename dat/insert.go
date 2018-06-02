@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"errors"
 	"reflect"
+
+	"github.com/helloeave/dat/log"
 )
 
 // InsertBuilder contains the clauses for an INSERT statement
@@ -23,7 +25,7 @@ type InsertBuilder struct {
 // NewInsertBuilder creates a new InsertBuilder for the given table.
 func NewInsertBuilder(table string) *InsertBuilder {
 	if table == "" {
-		logger.Error("InsertInto requires a table name.")
+		log.Err("InsertInto requires a table name.")
 		return nil
 	}
 	return &InsertBuilder{table: table, isInterpolated: EnableInterpolation}

@@ -13,7 +13,6 @@ github.com/mattn/go-isatty      v0.0.0-20151211000621-56b76bdf51f7
 github.com/mattn/go-sqlite3     v1.7.0
 github.com/mgutz/ansi           v0.0.0-20150914162238-c286dcecd19f
 github.com/mgutz/jo             v0.0.0-20151208164356-0b027231853f
-github.com/mgutz/logxi          v0.0.0-20160416165908-7d364cab682d
 github.com/mgutz/minimist       v0.0.0-20151219120022-39eb8cf573ca
 github.com/mgutz/str            v0.0.0-20150623153827-968bf66e3da8
 github.com/mgutz/to             v0.0.0-20150801172905-2a0bcba06616

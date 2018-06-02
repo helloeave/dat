@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/helloeave/dat/dat"
+	"github.com/helloeave/dat/log"
 	"github.com/lib/pq/hstore"
 )
 
@@ -118,7 +119,7 @@ func installFixtures() {
 	for _, v := range sqlToRun {
 		_, err := testDB.Exec(v)
 		if err != nil {
-			logger.Fatal("Failed to execute statement", "sql", v, "err", err)
+			log.Fatal("Failed to execute statement", "sql", v, "err", err)
 		}
 	}
 }
