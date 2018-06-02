@@ -46,13 +46,13 @@ func SetSQL(l LogFunc) {
 
 // Error is a temporary helper to replace logger.Error from logxi
 func Error(msg string, vals ...interface{}) error {
-	Err(msg, vals)
+	Err(msg, vals...)
 	return fmt.Errorf(fmt.Sprintln(msg, vals))
 }
 
 // Fatal is a temporary helper to replace logger.Fatal from logxi
 func Fatal(msg string, vals ...interface{}) {
-	Err(msg, vals)
+	Err(msg, vals...)
 	os.Exit(1)
 }
 
