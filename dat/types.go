@@ -8,6 +8,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/helloeave/dat/log"
 	"github.com/lib/pq"
 )
 
@@ -189,7 +190,7 @@ func (n *NullTime) UnmarshalJSON(b []byte) error {
 			return n.Scan(t)
 		}
 	}
-	return logger.Error("Cannot parse time", "time", s, "formats", formats)
+	return log.Error("Cannot parse time", "time", s, "formats", formats)
 }
 
 // UnmarshalJSON correctly deserializes a NullBool from JSON

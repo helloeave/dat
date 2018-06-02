@@ -2,11 +2,11 @@ package runner
 
 import (
 	"errors"
-	"log"
 	"sync"
 	"time"
 
 	"github.com/helloeave/dat/dat"
+	"github.com/helloeave/dat/log"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -17,6 +17,7 @@ const (
 	txErred
 )
 
+// TODO: bk - extract all errors to actual err values in the package, and eliminate log.Error hack
 // ErrTxRollbacked occurs when Commit() or Rollback() is called on a
 // transaction that has already been rollbacked.
 var ErrTxRollbacked = errors.New("Nested transaction already rollbacked")
@@ -49,11 +50,11 @@ func (db *DB) Begin() (*Tx, error) {
 	tx, err := db.DB.Beginx()
 	if err != nil {
 		if dat.Strict {
-			logger.Fatal("Could not create transaction")
+			log.Fatal("Could not create transaction")
 		}
-		return nil, logger.Error("begin.error", err)
+		return nil, log.Error("begin.error", err)
 	}
-	logger.Debug("begin tx")
+	log.Debug("begin tx")
 	return WrapSqlxTx(tx), nil
 }
 
@@ -65,7 +66,7 @@ func (tx *Tx) Begin() (*Tx, error) {
 		return nil, ErrTxRollbacked
 	}
 
-	logger.Debug("begin nested tx")
+	log.Debug("begin nested tx")
 	tx.pushState()
 	return tx, nil
 }
@@ -76,25 +77,27 @@ func (tx *Tx) Commit() error {
 	defer tx.Unlock()
 
 	if tx.IsRollbacked {
-		return logger.Error("Cannot commit", ErrTxRollbacked)
+		log.Err("cannot commit", ErrTxRollbacked)
+		return ErrTxRollbacked
 	}
 
 	if tx.state == txCommitted {
-		return logger.Error("Transaction has already been commited")
+		return log.Error("Transaction has already been commited")
 	}
 	if tx.state == txRollbacked {
-		return logger.Error("Transaction has already been rollbacked")
+		return log.Error("Transaction has already been rollbacked")
 	}
 
 	if len(tx.stateStack) == 0 {
 		err := tx.Tx.Commit()
 		if err != nil {
 			tx.state = txErred
-			return logger.Error("commit.error", err)
+			log.Err("commit.error", err)
+			return err
 		}
 	}
 
-	logger.Debug("commit")
+	log.Debug("commit")
 	tx.state = txCommitted
 	return nil
 }
@@ -105,20 +108,21 @@ func (tx *Tx) Rollback() error {
 	defer tx.Unlock()
 
 	if tx.IsRollbacked {
-		return logger.Error("Cannot rollback", ErrTxRollbacked)
+		log.Err("cannot rollback", ErrTxRollbacked)
+		return ErrTxRollbacked
 	}
 	if tx.state == txCommitted {
-		return logger.Error("Cannot rollback, transaction has already been commited")
+		return log.Error("Cannot rollback, transaction has already been commited")
 	}
 
 	// rollback is sent to the database even in nested state
 	err := tx.Tx.Rollback()
 	if err != nil {
 		tx.state = txErred
-		return logger.Error("Unable to rollback", "err", err)
+		return log.Error("Unable to rollback", "err", err)
 	}
 
-	logger.Debug("rollback")
+	log.Debug("rollback")
 	tx.state = txRollbacked
 	tx.IsRollbacked = true
 	return nil
@@ -138,12 +142,12 @@ func (tx *Tx) AutoCommit() error {
 	if err != nil {
 		tx.state = txErred
 		if dat.Strict {
-			log.Fatalf("Could not commit transaction: %s\n", err.Error())
+			log.Fatal("Could not commit transaction", err.Error())
 		}
 		tx.popState()
-		return logger.Error("transaction.AutoCommit.commit_error", err)
+		return log.Error("transaction.AutoCommit.commit_error", err)
 	}
-	logger.Debug("autocommit")
+	log.Debug("autocommit")
 	tx.state = txCommitted
 	tx.popState()
 	return err
@@ -163,12 +167,12 @@ func (tx *Tx) AutoRollback() error {
 	if err != nil {
 		tx.state = txErred
 		if dat.Strict {
-			log.Fatalf("Could not rollback transaction: %s\n", err.Error())
+			log.Fatal("Could not rollback transaction", err.Error())
 		}
 		tx.popState()
-		return logger.Error("transaction.AutoRollback.rollback_error", err)
+		return log.Error("transaction.AutoRollback.rollback_error", err)
 	}
-	logger.Debug("autorollback")
+	log.Debug("autorollback")
 	tx.state = txRollbacked
 	tx.IsRollbacked = true
 	tx.popState()

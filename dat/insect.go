@@ -1,6 +1,10 @@
 package dat
 
-import "reflect"
+import (
+	"reflect"
+
+	"github.com/helloeave/dat/log"
+)
 
 // InsectBuilder inserts or selects an existing row when executed.
 //
@@ -35,7 +39,7 @@ type InsectBuilder struct {
 // NewInsectBuilder creates a new InsectBuilder for the given table.
 func NewInsectBuilder(table string) *InsectBuilder {
 	if table == "" {
-		logger.Error("Insect requires a table name.")
+		log.Err("Insect requires a table name.")
 		return nil
 	}
 	return &InsectBuilder{table: table, isInterpolated: EnableInterpolation}

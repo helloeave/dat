@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/garyburd/redigo/redis"
+	"github.com/helloeave/dat/log"
 )
 
 func newRedisPool(host, password string) *redis.Pool {
@@ -39,7 +40,7 @@ func NewDefaultRedisStore() (KeyValueStore, error) {
 
 // NewRedisStore creates a new instance of RedisTokenStore.
 func NewRedisStore(ns string, host string, password string) (*RedisStore, error) {
-	logger.Info("Creating redis pool", "ns", ns, "host", host, "usingPassword", password == "")
+	log.Debug("Creating redis pool", "ns", ns, "host", host, "usingPassword", password == "")
 	pool := newRedisPool(host, password)
 	return NewRedisStoreFromPool(ns, pool), nil
 }
