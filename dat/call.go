@@ -1,6 +1,6 @@
 package dat
 
-import "github.com/helloeave/dat/log"
+import "github.com/helloeave/dat/internal/log"
 
 // CallBuilder is a store procedure call builder.
 type CallBuilder struct {
@@ -14,7 +14,7 @@ type CallBuilder struct {
 // NewCallBuilder creates a new CallBuilder for the given sproc name and args.
 func NewCallBuilder(sproc string, args ...interface{}) *CallBuilder {
 	if sproc == "" {
-		log.Err("Invalid sproc name", "name", sproc)
+		log.Error("Invalid sproc name", "name", sproc)
 		return nil
 	}
 	return &CallBuilder{sproc: sproc, args: args, isInterpolated: EnableInterpolation}

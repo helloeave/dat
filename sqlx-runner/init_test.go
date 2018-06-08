@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/helloeave/dat/dat"
+	"github.com/helloeave/dat/internal/log"
 	"github.com/helloeave/dat/kvs"
-	"github.com/helloeave/dat/log"
 	"github.com/helloeave/dat/postgres"
 )
 
@@ -21,7 +21,7 @@ func init() {
 	sqlDB = realDb()
 	testDB = NewDB(sqlDB, "postgres")
 	dat.Strict = false
-	log.SetErr(nil)
+	dat.SetErrorLogger(nil)
 
 	Cache = kvs.NewMemoryKeyValueStore(1 * time.Second)
 	//Cache, _ = kvs.NewDefaultRedisStore()

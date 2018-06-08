@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/helloeave/dat/dat"
-	"github.com/helloeave/dat/log"
+	"github.com/helloeave/dat/internal/log"
 	"github.com/lib/pq/hstore"
 )
 

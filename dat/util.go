@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/helloeave/dat/log"
+	"github.com/helloeave/dat/internal/log"
 	"github.com/mgutz/str"
 
 	"github.com/helloeave/dat/common"

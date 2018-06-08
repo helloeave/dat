@@ -3,7 +3,7 @@ package kvs
 import (
 	"time"
 
-	"github.com/helloeave/dat/log"
+	"github.com/helloeave/dat/internal/log"
 	gocache "github.com/pmylund/go-cache"
 )
 
@@ -33,7 +33,7 @@ func NewMemoryKeyValueStore(cleanupInterval time.Duration) *MemoryKeyValueStore 
 // Set sets a key with time-to-live.
 func (store *MemoryKeyValueStore) Set(key, value string, ttl time.Duration) error {
 	if ttl < store.cleanupInterval {
-		log.Err("The cleanupInterval setting for in-memory key-value store is longer than the TTL of this operation, which means its effective TTL is based on the cleanupInterval")
+		log.Error("The cleanupInterval setting for in-memory key-value store is longer than the TTL of this operation, which means its effective TTL is based on the cleanupInterval")
 	}
 	store.Cache.Set(key, value, ttl)
 	return nil

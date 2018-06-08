@@ -1,6 +1,6 @@
 package dat
 
-import "github.com/helloeave/dat/log"
+import "github.com/helloeave/dat/internal/log"
 
 type subInfo struct {
 	*Expression
@@ -265,7 +265,7 @@ func (b *SelectDocBuilder) ToSQL() (string, []interface{}, error) {
 // Columns adds additional select columns to the builder.
 func (b *SelectDocBuilder) Columns(columns ...string) *SelectDocBuilder {
 	if len(columns) == 0 || columns[0] == "" {
-		log.Error("Select requires 1 or more columns")
+		log.ErrorE("Select requires 1 or more columns")
 		return nil
 	}
 	b.columns = append(b.columns, columns...)

@@ -9,7 +9,7 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/helloeave/dat/log"
+	"github.com/helloeave/dat/internal/log"
 )
 
 func isUint(k reflect.Kind) bool {
@@ -63,7 +63,7 @@ func Interpolate(sql string, vals []interface{}) (string, []interface{}, error) 
 	// Args with a blank query is an error
 	if sql == "" {
 		if lenVals != 0 {
-			return "", nil, log.Error("Interpolation error", "err", ErrArgumentMismatch, "sql", sql, "args", vals)
+			return "", nil, log.ErrorE("Interpolation error", "err", ErrArgumentMismatch, "sql", sql, "args", vals)
 		}
 		return "", nil, nil
 	}
@@ -75,13 +75,13 @@ func Interpolate(sql string, vals []interface{}) (string, []interface{}, error) 
 		// No args for a query with place holders is an error
 		if lenVals == 0 {
 			if hasPlaceholders {
-				return "", nil, log.Error("Interpolation error", "err", ErrArgumentMismatch, "sql", sql, "args", vals)
+				return "", nil, log.ErrorE("Interpolation error", "err", ErrArgumentMismatch, "sql", sql, "args", vals)
 			}
 			return sql, nil, nil
 		}
 
 		if lenVals > 0 && !hasPlaceholders {
-			return "", nil, log.Error("Interpolation error", "err", ErrArgumentMismatch, "sql", sql, "args", vals)
+			return "", nil, log.ErrorE("Interpolation error", "err", ErrArgumentMismatch, "sql", sql, "args", vals)
 		}
 
 		if !hasPlaceholders {

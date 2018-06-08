@@ -6,8 +6,8 @@ import (
 
 	"github.com/cenkalti/backoff"
 	"github.com/helloeave/dat/dat"
+	"github.com/helloeave/dat/internal/log"
 	"github.com/helloeave/dat/kvs"
-	"github.com/helloeave/dat/log"
 	"github.com/helloeave/dat/postgres"
 )
 

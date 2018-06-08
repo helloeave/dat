@@ -3,7 +3,7 @@ package dat
 import (
 	"reflect"
 
-	"github.com/helloeave/dat/log"
+	"github.com/helloeave/dat/internal/log"
 )
 
 // InsectBuilder inserts or selects an existing row when executed.
@@ -39,7 +39,7 @@ type InsectBuilder struct {
 // NewInsectBuilder creates a new InsectBuilder for the given table.
 func NewInsectBuilder(table string) *InsectBuilder {
 	if table == "" {
-		log.Err("Insect requires a table name.")
+		log.Error("Insect requires a table name.")
 		return nil
 	}
 	return &InsectBuilder{table: table, isInterpolated: EnableInterpolation}
