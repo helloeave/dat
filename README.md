@@ -4,22 +4,28 @@
 
 `dat` (Data Access Toolkit) is a fast, lightweight Postgres library for Go.
 
-*   Focused on Postgres. See `Insect`, `Upsert`, `SelectDoc`, `QueryJSON`
+-   Focused on Postgres. See `Insect`, `Upsert`, `SelectDoc`, `QueryJSON`
 
-*   Built on a solid foundation [sqlx](https://github.com/jmoiron/sqlx)
+-   Built on a solid foundation [sqlx](https://github.com/jmoiron/sqlx)
 
     ```go
     // child DB is *sqlx.DB
     DB.DB.Queryx(`SELECT * FROM users`)
     ```
 
-*   SQL and backtick friendly
+-   All query methods (Exec(), Queryx(), QueryStruct(), etc.) have methods that respect `context.Context` (ExecContext(), QueryxContext(), QueryStructContext(), etc.)
+
+    ```go
+    DB.DB.QueryxContext(context.Background(), `SELECT * FROM users`)
+    ```
+
+-   SQL and backtick friendly
 
     ```go
     DB.SQL(`SELECT * FROM people LIMIT 10`).QueryStructs(&people)
     ```
 
-*   JSON Document retrieval (single trip to Postgres, requires Postgres 9.3+)
+-   JSON Document retrieval (single trip to Postgres, requires Postgres 9.3+)
 
     ```go
     DB.SelectDoc("id", "user_name", "avatar").
@@ -38,15 +44,15 @@
         "id": 4,
         "user_name": "mario",
         "avatar": "https://imgur.com/a23x.jpg",
-        "recent_comments": [{"id": 1, "title": "..."}],
-        "recent_posts": [{"id": 1, "title": "..."}],
+        "recent_comments": [{ "id": 1, "title": "..." }],
+        "recent_posts": [{ "id": 1, "title": "..." }],
         "account": {
-            "balance": 42.00
+            "balance": 42.0
         }
     }
     ```
 
-*   JSON marshalable bytes (requires Postgres 9.3+)
+-   JSON marshalable bytes (requires Postgres 9.3+)
 
     ```go
     var b []byte
@@ -61,13 +67,13 @@
     ).QueryObject(&obj)
     ```
 
-*   Ordinal placeholders
+-   Ordinal placeholders
 
     ```go
     DB.SQL(`SELECT * FROM people WHERE state = $1`, "CA").Exec()
     ```
 
-*   SQL-like API
+-   SQL-like API
 
     ```go
     err := DB.
@@ -77,7 +83,7 @@
         QueryStruct(&user)
     ```
 
-*   Redis caching
+-   Redis caching
 
     ```go
     // cache result for 30 seconds
@@ -90,13 +96,13 @@
         QueryStruct(&user)
     ```
 
-*   Nested transactions
+-   Nested transactions
 
-*   Per query timeout with database cancellation logic `pg_cancel_backend`
+-   Per query timeout with database cancellation logic `pg_cancel_backend`
 
-*   SQL and slow query logging
+-   SQL and slow query logging
 
-*   Performant
+-   Performant
 
     -   ordinal placeholder logic is optimized to be nearly as fast as using `?`
     -   `dat` can interpolate queries locally resulting in performance increase
@@ -285,7 +291,7 @@ DB.Update("users").
 
 ### IN queries
 
-__applicable when dat.EnableInterpolation == true__
+**applicable when dat.EnableInterpolation == true**
 
 Simpler IN queries which expand correctly
 
@@ -298,7 +304,7 @@ b.MustInterpolate() == "SELECT * FROM posts WHERE id IN (10,20,30,40,50)"
 ### Tracing SQL
 
 `dat` uses [logxi](https://github.com/mgutz/logxi) for logging. By default,
-*logxi* logs all warnings and errors to the console. `dat` logs the
+_logxi_ logs all warnings and errors to the console. `dat` logs the
 SQL and its arguments on any error. In addition, `dat` logs slow queries
 as warnings if `runner.LogQueriesThreshold > 0`
 
@@ -419,7 +425,7 @@ err = DB.
 ### Update
 
 Use `Returning` to fetch columns updated by triggers. For example,
-an update trigger on "updated\_at" column
+an update trigger on "updated_at" column
 
 ```go
 err = DB.
@@ -459,7 +465,7 @@ SELECT * FROM ins UNION ALL SELECT * FROM upd
 `
 ```
 
-__applicable when dat.EnableInterpolation == true__
+**applicable when dat.EnableInterpolation == true**
 
 To reset columns to their default DDL value, use `DEFAULT`. For example,
 to reset `payment\_type`
@@ -488,7 +494,7 @@ err := DB.
 
 Use a map of attributes
 
-``` go
+```go
 attrsMap := map[string]interface{}{"name": "Gopher", "language": "Go"}
 result, err := DB.
     Update("developers").
@@ -499,7 +505,7 @@ result, err := DB.
 
 ### Delete
 
-``` go
+```go
 result, err = DB.
     DeleteFrom("posts").
     Where("id = $1", otherPost.ID).
@@ -511,7 +517,7 @@ result, err = DB.
 
 Define JOINs in argument to `From`
 
-``` go
+```go
 err = DB.
     Select("u.*, p.*").
     From(`
@@ -566,7 +572,7 @@ err := DB.SQL(sql).QueryStruct(&post)
 ```
 
 For multiple operations, create a `Tx` transaction.
-__`defer Tx.AutoCommit()` or `defer Tx.AutoRollback()` MUST be called__
+**`defer Tx.AutoCommit()` or `defer Tx.AutoRollback()` MUST be called**
 
 ```go
 func PostsIndex(rw http.ResponseWriter, r *http.Request) {
@@ -614,13 +620,13 @@ func getUsers(conn runner.Connection) ([]*dto.Users, error) {
 
 Nested transaction logic is as follows:
 
-*   If `Commit` is called in a nested transaction, the operation results in no operation (NOOP).
+-   If `Commit` is called in a nested transaction, the operation results in no operation (NOOP).
     Only the top level `Commit` commits the transaction to the database.
 
-*   If `Rollback` is called in a nested transaction, then the entire
+-   If `Rollback` is called in a nested transaction, then the entire
     transaction is rolled back. `Tx.IsRollbacked` is set to true.
 
-*   Either `defer Tx.AutoCommit()` or `defer Tx.AutoRollback()` **MUST BE CALLED**
+-   Either `defer Tx.AutoCommit()` or `defer Tx.AutoRollback()` **MUST BE CALLED**
     for each corresponding `Begin`. The internal state of nested transactions is
     tracked in these two methods.
 
@@ -674,12 +680,12 @@ from JSON and Postgres.
 
 ### Constants
 
-__applicable when dat.EnableInterpolation == true__
+**applicable when dat.EnableInterpolation == true**
 
 `dat` provides often used constants in SQL statements
 
-* `dat.DEFAULT` - inserts `DEFAULT`
-* `dat.NOW` - inserts `NOW()`
+-   `dat.DEFAULT` - inserts `DEFAULT`
+-   `dat.NOW` - inserts `NOW()`
 
 ### Defining Constants
 
@@ -781,13 +787,14 @@ runner.Cache.Del("fookey")
 
 ### SQL Interpolation
 
-__Interpolation is DISABLED by default. Set `dat.EnableInterpolation = true`
-to enable.__
+**Interpolation is DISABLED by default. Set `dat.EnableInterpolation = true`
+to enable.**
 
 `dat` can interpolate locally to inline query arguments. For example,
 this statement
 
 go
+
 ```
 db.Exec(
     "INSERT INTO (a, b, c, d) VALUES ($1, $2, $3, $4)",
@@ -804,10 +811,10 @@ the lib/pq layer
 
 Interpolation provides these benefits:
 
-*   Performance improvements
-*   Debugging/tracing is simpler with interpolated SQL
-*   May use safe SQL constants like `dat.NOW` and `dat.DEFAULT`
-*   Expand placeholders with slice values `$1 => (1, 2, 3)`
+-   Performance improvements
+-   Debugging/tracing is simpler with interpolated SQL
+-   May use safe SQL constants like `dat.NOW` and `dat.DEFAULT`
+-   Expand placeholders with slice values `$1 => (1, 2, 3)`
 
 Read [SQL Interpolation](https://github.com/mgutz/dat/wiki/Local-Interpolation) in wiki
 for more details and SQL injection.

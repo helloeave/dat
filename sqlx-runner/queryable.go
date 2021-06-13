@@ -1,6 +1,7 @@
 package runner
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 
@@ -39,13 +40,25 @@ func (q *Queryable) DeleteFrom(table string) *dat.DeleteBuilder {
 
 // Exec executes a SQL query with optional arguments.
 func (q *Queryable) Exec(cmd string, args ...interface{}) (*dat.Result, error) {
+	return q.execCommon(context.Background(), cmd, args...)
+}
+
+func (q *Queryable) ExecContext(ctx context.Context, cmd string, args ...interface{}) (*dat.Result, error) {
+	return q.execCommon(ctx, cmd, args...)
+}
+
+func (q *Queryable) execCommon(ctx context.Context, cmd string, args ...interface{}) (*dat.Result, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
 	var result sql.Result
 	var err error
 
 	if len(args) == 0 {
-		result, err = q.runner.Exec(cmd)
+		result, err = q.runner.ExecContext(ctx, cmd)
 	} else {
-		result, err = q.runner.Exec(cmd, args...)
+		result, err = q.runner.ExecContext(ctx, cmd, args...)
 	}
 	if err != nil {
 		return nil, logSQLError(err, "Exec", cmd, args)
@@ -59,15 +72,27 @@ func (q *Queryable) Exec(cmd string, args ...interface{}) (*dat.Result, error) {
 
 // ExecBuilder executes the SQL in builder.
 func (q *Queryable) ExecBuilder(b dat.Builder) error {
+	return q.execBuilderCommon(context.Background(), b)
+}
+
+func (q *Queryable) ExecBuilderContext(ctx context.Context, b dat.Builder) error {
+	return q.execBuilderCommon(ctx, b)
+}
+
+func (q *Queryable) execBuilderCommon(ctx context.Context, b dat.Builder) error {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
 	sql, args, err := b.Interpolate()
 	if err != nil {
 		return err
 	}
 
 	if len(args) == 0 {
-		_, err = q.runner.Exec(sql)
+		_, err = q.runner.ExecContext(ctx, sql)
 	} else {
-		_, err = q.runner.Exec(sql, args...)
+		_, err = q.runner.ExecContext(ctx, sql, args...)
 	}
 	if err != nil {
 		return logSQLError(err, "ExecBuilder", sql, args)
@@ -78,8 +103,20 @@ func (q *Queryable) ExecBuilder(b dat.Builder) error {
 // ExecMulti executes multiple SQL statements returning the number of
 // statements executed, or the index at which an error occurred.
 func (q *Queryable) ExecMulti(commands ...*dat.Expression) (int, error) {
+	return q.execMultiCommon(context.Background(), commands...)
+}
+
+func (q *Queryable) ExecMultiContext(ctx context.Context, commands ...*dat.Expression) (int, error) {
+	return q.execMultiCommon(ctx, commands...)
+}
+
+func (q *Queryable) execMultiCommon(ctx context.Context, commands ...*dat.Expression) (int, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
 	for i, cmd := range commands {
-		_, err := q.runner.Exec(cmd.Sql, cmd.Args...)
+		_, err := q.runner.ExecContext(ctx, cmd.Sql, cmd.Args...)
 		if err != nil {
 			return i, err
 		}

@@ -1,6 +1,7 @@
 package runner
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -66,6 +67,18 @@ func prependDatQueryID(sql string, id string) string {
 // Cancel cancels last query with a queryID. If queryID was not set then
 // ErrInvalidOperation is returned.
 func (ex *Execer) Cancel() error {
+	return ex.cancelCommon(context.Background())
+}
+
+func (ex *Execer) CancelContext(ctx context.Context) error {
+	return ex.cancelCommon(ctx)
+}
+
+func (ex *Execer) cancelCommon(ctx context.Context) error {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
 	if ex.queryID == "" {
 		return dat.ErrInvalidOperation
 	}
@@ -79,7 +92,7 @@ func (ex *Execer) Cancel() error {
 		LIKE '%s%%'
 	) psa`, datQueryID(ex.queryID))
 
-	_, err := ex.execSQL(q, nil)
+	_, err := ex.execSQL(ctx, q, nil)
 	if err != nil {
 		logger.Error("While trying to cancel a query", err)
 	}
@@ -97,7 +110,15 @@ func (ex *Execer) Interpolate() (string, []interface{}, error) {
 
 // Exec executes a builder's query.
 func (ex *Execer) Exec() (*dat.Result, error) {
-	res, err := ex.exec()
+	return ex.execCommon(context.Background())
+}
+
+func (ex *Execer) ExecContext(ctx context.Context) (*dat.Result, error) {
+	return ex.execCommon(ctx)
+}
+
+func (ex *Execer) execCommon(ctx context.Context) (*dat.Result, error) {
+	res, err := ex.exec(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -110,44 +131,73 @@ func (ex *Execer) Exec() (*dat.Result, error) {
 
 // Queryx executes builder's query and returns rows.
 func (ex *Execer) Queryx() (*sqlx.Rows, error) {
-	return ex.query()
+	return ex.query(context.Background())
+}
+
+func (ex *Execer) QueryxContext(ctx context.Context) (*sqlx.Rows, error) {
+	return ex.query(ctx)
 }
 
 // QueryScalar executes builder's query and scans returned row into destinations.
 func (ex *Execer) QueryScalar(destinations ...interface{}) error {
-	return ex.queryScalar(destinations...)
+	return ex.queryScalar(context.Background(), destinations...)
+}
+
+func (ex *Execer) QueryScalarContext(ctx context.Context, destinations ...interface{}) error {
+	return ex.queryScalar(ctx, destinations...)
 }
 
 // QuerySlice executes builder's query and builds a slice of values from each row, where
 // each row only has one column.
 func (ex *Execer) QuerySlice(dest interface{}) error {
-	return ex.querySlice(dest)
+	return ex.querySlice(context.Background(), dest)
+}
+
+func (ex *Execer) QuerySliceContext(ctx context.Context, dest interface{}) error {
+	return ex.querySlice(ctx, dest)
 }
 
 // QueryStruct executes builders' query and scans the result row into dest.
 func (ex *Execer) QueryStruct(dest interface{}) error {
 	if _, ok := ex.builder.(*dat.SelectDocBuilder); ok {
-		err := ex.queryJSONStruct(dest)
+		err := ex.queryJSONStruct(context.Background(), dest)
 		return err
 	}
-	return ex.queryStruct(dest)
+	return ex.queryStruct(context.Background(), dest)
+}
+
+func (ex *Execer) QueryStructContext(ctx context.Context, dest interface{}) error {
+	if _, ok := ex.builder.(*dat.SelectDocBuilder); ok {
+		err := ex.queryJSONStruct(ctx, dest)
+		return err
+	}
+	return ex.queryStruct(ctx, dest)
 }
 
 // QueryStructs executes builders' query and scans each row as an item in a slice of structs.
 func (ex *Execer) QueryStructs(dest interface{}) error {
 	if _, ok := ex.builder.(*dat.SelectDocBuilder); ok {
-		err := ex.queryJSONStructs(dest)
+		err := ex.queryJSONStructs(context.Background(), dest)
 		return err
 	}
 
-	return ex.queryStructs(dest)
+	return ex.queryStructs(context.Background(), dest)
+}
+
+func (ex *Execer) QueryStructsContext(ctx context.Context, dest interface{}) error {
+	if _, ok := ex.builder.(*dat.SelectDocBuilder); ok {
+		err := ex.queryJSONStructs(ctx, dest)
+		return err
+	}
+
+	return ex.queryStructs(ctx, dest)
 }
 
 // QueryObject wraps the builder's query within a `to_json` then executes and unmarshals
 // the result into dest.
 func (ex *Execer) QueryObject(dest interface{}) error {
 	if _, ok := ex.builder.(*dat.SelectDocBuilder); ok {
-		b, err := ex.queryJSONBlob(false)
+		b, err := ex.queryJSONBlob(context.Background(), false)
 		if err != nil {
 			return err
 		}
@@ -157,15 +207,38 @@ func (ex *Execer) QueryObject(dest interface{}) error {
 		return json.Unmarshal(b, dest)
 	}
 
-	return ex.queryObject(dest)
+	return ex.queryObject(context.Background(), dest)
+}
+
+func (ex *Execer) QueryObjectContext(ctx context.Context, dest interface{}) error {
+	if _, ok := ex.builder.(*dat.SelectDocBuilder); ok {
+		b, err := ex.queryJSONBlob(ctx, false)
+		if err != nil {
+			return err
+		}
+		if b == nil {
+			return nil
+		}
+		return json.Unmarshal(b, dest)
+	}
+
+	return ex.queryObject(ctx, dest)
 }
 
 // QueryJSON wraps the builder's query within a `to_json` then executes and returns
 // the JSON []byte representation.
 func (ex *Execer) QueryJSON() ([]byte, error) {
 	if _, ok := ex.builder.(*dat.SelectDocBuilder); ok {
-		return ex.queryJSONBlob(false)
+		return ex.queryJSONBlob(context.Background(), false)
 	}
 
-	return ex.queryJSON()
+	return ex.queryJSON(context.Background())
+}
+
+func (ex *Execer) QueryJSONContext(ctx context.Context) ([]byte, error) {
+	if _, ok := ex.builder.(*dat.SelectDocBuilder); ok {
+		return ex.queryJSONBlob(ctx, false)
+	}
+
+	return ex.queryJSON(ctx)
 }

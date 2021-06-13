@@ -2,6 +2,7 @@ package runner
 
 import (
 	"bytes"
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -21,11 +22,11 @@ import (
 // database is the interface for sqlx's DB or Tx against which
 // queries can be executed
 type database interface {
-	Exec(query string, args ...interface{}) (sql.Result, error)
-	Queryx(query string, args ...interface{}) (*sqlx.Rows, error)
-	QueryRowx(query string, args ...interface{}) *sqlx.Row
-	Select(dest interface{}, query string, args ...interface{}) error
-	Get(dest interface{}, query string, args ...interface{}) error
+	ExecContext(context context.Context, query string, args ...interface{}) (sql.Result, error)
+	QueryxContext(context context.Context, query string, args ...interface{}) (*sqlx.Rows, error)
+	QueryRowxContext(context context.Context, query string, args ...interface{}) *sqlx.Row
+	SelectContext(context context.Context, dest interface{}, query string, args ...interface{}) error
+	GetContext(context context.Context, dest interface{}, query string, args ...interface{}) error
 }
 
 func toOutputStr(args []interface{}) string {
@@ -94,16 +95,20 @@ func logExecutionTime(start time.Time, sql string, args []interface{}) {
 	}
 }
 
-func (ex *Execer) exec() (sql.Result, error) {
+func (ex *Execer) exec(ctx context.Context) (sql.Result, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
 	if ex.timeout == 0 {
-		return ex.execFn()
+		return ex.execFn(ctx)
 	}
 
 	ch := make(chan bool, 1)
 	var result sql.Result
 	var err error
 	go func() {
-		result, err = ex.execFn()
+		result, err = ex.execFn(ctx)
 		ch <- true
 	}()
 	for {
@@ -118,7 +123,7 @@ func (ex *Execer) exec() (sql.Result, error) {
 
 // execFn executes the query built by builder. Use execFn when data is not
 // to be returned.
-func (ex *Execer) execFn() (sql.Result, error) {
+func (ex *Execer) execFn(ctx context.Context) (sql.Result, error) {
 	fullSQL, args, err := ex.Interpolate()
 	if err != nil {
 		return nil, logger.Error("execFn.10", "err", err, "sql", fullSQL)
@@ -126,7 +131,7 @@ func (ex *Execer) execFn() (sql.Result, error) {
 	defer logExecutionTime(time.Now(), fullSQL, args)
 
 	var result sql.Result
-	result, err = ex.database.Exec(fullSQL, args...)
+	result, err = ex.database.ExecContext(ctx, fullSQL, args...)
 	if err != nil {
 		return nil, logSQLError(err, "execFn.30:"+fmt.Sprintf("%T", err), fullSQL, args)
 	}
@@ -136,12 +141,12 @@ func (ex *Execer) execFn() (sql.Result, error) {
 
 // execSQL executes SQL. DO NOT add timeout logic here since this is called
 // by Cancel when a timeout occurs.
-func (ex *Execer) execSQL(fullSQL string, args []interface{}) (sql.Result, error) {
+func (ex *Execer) execSQL(ctx context.Context, fullSQL string, args []interface{}) (sql.Result, error) {
 	defer logExecutionTime(time.Now(), fullSQL, args)
 
 	var result sql.Result
 	var err error
-	result, err = ex.database.Exec(fullSQL, args...)
+	result, err = ex.database.ExecContext(ctx, fullSQL, args...)
 	if err != nil {
 		return nil, logSQLError(err, "execSQL.30", fullSQL, args)
 	}
@@ -149,16 +154,20 @@ func (ex *Execer) execSQL(fullSQL string, args []interface{}) (sql.Result, error
 	return result, nil
 }
 
-func (ex *Execer) query() (*sqlx.Rows, error) {
+func (ex *Execer) query(ctx context.Context) (*sqlx.Rows, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
 	if ex.timeout == 0 {
-		return ex.queryFn()
+		return ex.queryFn(ctx)
 	}
 
 	ch := make(chan bool, 1)
 	var rows *sqlx.Rows
 	var err error
 	go func() {
-		rows, err = ex.queryFn()
+		rows, err = ex.queryFn(ctx)
 		ch <- true
 	}()
 	for {
@@ -173,14 +182,14 @@ func (ex *Execer) query() (*sqlx.Rows, error) {
 }
 
 // Query delegates to the internal runner's Query.
-func (ex *Execer) queryFn() (*sqlx.Rows, error) {
+func (ex *Execer) queryFn(ctx context.Context) (*sqlx.Rows, error) {
 	fullSQL, args, err := ex.Interpolate()
 	if err != nil {
 		return nil, err
 	}
 
 	defer logExecutionTime(time.Now(), fullSQL, args)
-	rows, err := ex.database.Queryx(fullSQL, args...)
+	rows, err := ex.database.QueryxContext(ctx, fullSQL, args...)
 	if err != nil {
 		return nil, logSQLError(err, "queryFn.30", fullSQL, args)
 	}
@@ -188,15 +197,19 @@ func (ex *Execer) queryFn() (*sqlx.Rows, error) {
 	return rows, nil
 }
 
-func (ex *Execer) queryScalar(destinations ...interface{}) error {
+func (ex *Execer) queryScalar(ctx context.Context, destinations ...interface{}) error {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
 	if ex.timeout == 0 {
-		return ex.queryScalarFn(destinations)
+		return ex.queryScalarFn(ctx, destinations)
 	}
 
 	ch := make(chan bool, 1)
 	var err error
 	go func() {
-		err = ex.queryScalarFn(destinations)
+		err = ex.queryScalarFn(ctx, destinations)
 		ch <- true
 	}()
 	for {
@@ -213,7 +226,7 @@ func (ex *Execer) queryScalar(destinations ...interface{}) error {
 // one or more destinations.
 //
 // Returns sql.ErrNoRows if no value was found, and it was therefore not set.
-func (ex *Execer) queryScalarFn(destinations []interface{}) error {
+func (ex *Execer) queryScalarFn(ctx context.Context, destinations []interface{}) error {
 	fullSQL, args, blob, err := ex.cacheOrSQL()
 	if err != nil {
 		return err
@@ -230,7 +243,7 @@ func (ex *Execer) queryScalarFn(destinations []interface{}) error {
 	defer logExecutionTime(time.Now(), fullSQL, args)
 	// Run the query:
 	var rows *sqlx.Rows
-	rows, err = ex.database.Queryx(fullSQL, args...)
+	rows, err = ex.database.QueryxContext(ctx, fullSQL, args...)
 	if err != nil {
 		return logSQLError(err, "queryScalarFn.12: querying database", fullSQL, args)
 	}
@@ -251,15 +264,19 @@ func (ex *Execer) queryScalarFn(destinations []interface{}) error {
 	return sql.ErrNoRows
 }
 
-func (ex *Execer) querySlice(dest interface{}) error {
+func (ex *Execer) querySlice(ctx context.Context, dest interface{}) error {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
 	if ex.timeout == 0 {
-		return ex.querySliceFn(dest)
+		return ex.querySliceFn(ctx, dest)
 	}
 
 	ch := make(chan bool, 1)
 	var err error
 	go func() {
-		err = ex.querySliceFn(dest)
+		err = ex.querySliceFn(ctx, dest)
 		ch <- true
 	}()
 	for {
@@ -276,7 +293,7 @@ func (ex *Execer) querySlice(dest interface{}) error {
 // slice of primitive values
 //
 // Returns sql.ErrNoRows if no value was found, and it was therefore not set.
-func (ex *Execer) querySliceFn(dest interface{}) error {
+func (ex *Execer) querySliceFn(ctx context.Context, dest interface{}) error {
 	// Validate the dest and reflection values we need
 
 	// This must be a pointer to a slice
@@ -316,7 +333,7 @@ func (ex *Execer) querySliceFn(dest interface{}) error {
 	}
 
 	defer logExecutionTime(time.Now(), fullSQL, args)
-	rows, err := ex.database.Queryx(fullSQL, args...)
+	rows, err := ex.database.QueryxContext(ctx, fullSQL, args...)
 	if err != nil {
 		return logSQLError(err, "querySlice.load_all_values.query", fullSQL, args)
 	}
@@ -347,15 +364,19 @@ func (ex *Execer) querySliceFn(dest interface{}) error {
 	return nil
 }
 
-func (ex *Execer) queryStruct(dest interface{}) error {
+func (ex *Execer) queryStruct(ctx context.Context, dest interface{}) error {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
 	if ex.timeout == 0 {
-		return ex.queryStructFn(dest)
+		return ex.queryStructFn(ctx, dest)
 	}
 
 	ch := make(chan bool, 1)
 	var err error
 	go func() {
-		err = ex.queryStructFn(dest)
+		err = ex.queryStructFn(ctx, dest)
 		ch <- true
 	}()
 	for {
@@ -368,11 +389,7 @@ func (ex *Execer) queryStruct(dest interface{}) error {
 	}
 }
 
-// QueryStruct executes the query in builder and loads the resulting data into
-// a struct dest must be a pointer to a struct
-//
-// Returns sql.ErrNoRows if nothing was found
-func (ex *Execer) queryStructFn(dest interface{}) error {
+func (ex *Execer) queryStructFn(ctx context.Context, dest interface{}) error {
 	fullSQL, args, blob, err := ex.cacheOrSQL()
 	if err != nil {
 		return err
@@ -387,7 +404,7 @@ func (ex *Execer) queryStructFn(dest interface{}) error {
 	}
 
 	defer logExecutionTime(time.Now(), fullSQL, args)
-	err = ex.database.Get(dest, fullSQL, args...)
+	err = ex.database.GetContext(ctx, dest, fullSQL, args...)
 	if err != nil {
 		return logSQLError(err, "queryStruct.3", fullSQL, args)
 	}
@@ -396,15 +413,19 @@ func (ex *Execer) queryStructFn(dest interface{}) error {
 	return nil
 }
 
-func (ex *Execer) queryStructs(dest interface{}) error {
+func (ex *Execer) queryStructs(ctx context.Context, dest interface{}) error {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
 	if ex.timeout == 0 {
-		return ex.queryStructsFn(dest)
+		return ex.queryStructsFn(ctx, dest)
 	}
 
 	ch := make(chan bool, 1)
 	var err error
 	go func() {
-		err = ex.queryStructsFn(dest)
+		err = ex.queryStructsFn(ctx, dest)
 		ch <- true
 	}()
 	for {
@@ -422,7 +443,7 @@ func (ex *Execer) queryStructs(dest interface{}) error {
 //
 // Returns the number of items found (which is not necessarily the # of items
 // set)
-func (ex *Execer) queryStructsFn(dest interface{}) error {
+func (ex *Execer) queryStructsFn(ctx context.Context, dest interface{}) error {
 	fullSQL, args, blob, err := ex.cacheOrSQL()
 	if err != nil {
 		logger.Error("queryStructs.1: Could not convert to SQL", "err", err)
@@ -438,7 +459,7 @@ func (ex *Execer) queryStructsFn(dest interface{}) error {
 	}
 
 	defer logExecutionTime(time.Now(), fullSQL, args)
-	err = ex.database.Select(dest, fullSQL, args...)
+	err = ex.database.SelectContext(ctx, dest, fullSQL, args...)
 	if err != nil {
 		logSQLError(err, "queryStructs", fullSQL, args)
 	}
@@ -451,8 +472,12 @@ func (ex *Execer) queryStructsFn(dest interface{}) error {
 // a struct, using json.Unmarshal().
 //
 // Returns sql.ErrNoRows if nothing was found
-func (ex *Execer) queryJSONStruct(dest interface{}) error {
-	blob, err := ex.queryJSONBlob(true)
+func (ex *Execer) queryJSONStruct(ctx context.Context, dest interface{}) error {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	blob, err := ex.queryJSONBlob(ctx, true)
 	if err != nil {
 		return err
 	}
@@ -462,16 +487,16 @@ func (ex *Execer) queryJSONStruct(dest interface{}) error {
 	return nil
 }
 
-func (ex *Execer) queryJSONBlob(single bool) ([]byte, error) {
+func (ex *Execer) queryJSONBlob(ctx context.Context, single bool) ([]byte, error) {
 	if ex.timeout == 0 {
-		return ex.queryJSONBlobFn(single)
+		return ex.queryJSONBlobFn(ctx, single)
 	}
 
 	ch := make(chan bool, 1)
 	var err error
 	var b []byte
 	go func() {
-		b, err = ex.queryJSONBlobFn(single)
+		b, err = ex.queryJSONBlobFn(ctx, single)
 		ch <- true
 	}()
 	for {
@@ -488,7 +513,7 @@ func (ex *Execer) queryJSONBlob(single bool) ([]byte, error) {
 // into a blob. If a single item is to be returned, set single to true.
 //
 // Returns sql.ErrNoRows if nothing was found
-func (ex *Execer) queryJSONBlobFn(single bool) ([]byte, error) {
+func (ex *Execer) queryJSONBlobFn(ctx context.Context, single bool) ([]byte, error) {
 	fullSQL, args, blob, err := ex.cacheOrSQL()
 	if err != nil {
 		return nil, err
@@ -498,7 +523,7 @@ func (ex *Execer) queryJSONBlobFn(single bool) ([]byte, error) {
 	}
 
 	defer logExecutionTime(time.Now(), fullSQL, args)
-	rows, err := ex.database.Queryx(fullSQL, args...)
+	rows, err := ex.database.QueryxContext(ctx, fullSQL, args...)
 	if err != nil {
 		return nil, logSQLError(err, "queryJSONStructs", fullSQL, args)
 	}
@@ -559,8 +584,12 @@ func (ex *Execer) queryJSONBlobFn(single bool) ([]byte, error) {
 // a struct, using json.Unmarshal().
 //
 // Returns sql.ErrNoRows if nothing was found
-func (ex *Execer) queryJSONStructs(dest interface{}) error {
-	blob, err := ex.queryJSONBlob(false)
+func (ex *Execer) queryJSONStructs(ctx context.Context, dest interface{}) error {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	blob, err := ex.queryJSONBlob(ctx, false)
 	if err != nil {
 		return err
 	}
@@ -650,16 +679,16 @@ func (ex *Execer) setCache(data interface{}, dataType int) {
 	}
 }
 
-func (ex *Execer) queryJSON() ([]byte, error) {
+func (ex *Execer) queryJSON(ctx context.Context) ([]byte, error) {
 	if ex.timeout == 0 {
-		return ex.queryJSONFn()
+		return ex.queryJSONFn(ctx)
 	}
 
 	ch := make(chan bool, 1)
 	var err error
 	var b []byte
 	go func() {
-		b, err = ex.queryJSONFn()
+		b, err = ex.queryJSONFn(ctx)
 		ch <- true
 	}()
 	for {
@@ -677,7 +706,7 @@ func (ex *Execer) queryJSON() ([]byte, error) {
 // a bytes slice compatible.
 //
 // Returns sql.ErrNoRows if nothing was found
-func (ex *Execer) queryJSONFn() ([]byte, error) {
+func (ex *Execer) queryJSONFn(ctx context.Context) ([]byte, error) {
 	fullSQL, args, blob, err := ex.cacheOrSQL()
 	if err != nil {
 		return nil, err
@@ -689,7 +718,7 @@ func (ex *Execer) queryJSONFn() ([]byte, error) {
 	defer logExecutionTime(time.Now(), fullSQL, args)
 	jsonSQL := fmt.Sprintf("SELECT TO_JSON(ARRAY_AGG(__datq.*)) FROM (%s) AS __datq", fullSQL)
 
-	err = ex.database.Get(&blob, jsonSQL, args...)
+	err = ex.database.GetContext(ctx, &blob, jsonSQL, args...)
 	if err != nil {
 		logSQLError(err, "queryJSON", jsonSQL, args)
 	}
@@ -702,8 +731,11 @@ func (ex *Execer) queryJSONFn() ([]byte, error) {
 // an object agreeable with json.Unmarshal.
 //
 // Returns sql.ErrNoRows if nothing was found
-func (ex *Execer) queryObject(dest interface{}) error {
-	blob, err := ex.queryJSON()
+func (ex *Execer) queryObject(ctx context.Context, dest interface{}) error {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	blob, err := ex.queryJSON(ctx)
 	if err != nil {
 		return err
 	}

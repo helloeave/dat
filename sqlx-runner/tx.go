@@ -1,6 +1,7 @@
 package runner
 
 import (
+	"context"
 	"errors"
 	"log"
 	"sync"
@@ -46,7 +47,19 @@ func WrapSqlxTx(tx *sqlx.Tx) *Tx {
 
 // Begin creates a transaction for the given database
 func (db *DB) Begin() (*Tx, error) {
-	tx, err := db.DB.Beginx()
+	return db.beginCommon(context.Background())
+}
+
+func (db *DB) BeginContext(ctx context.Context) (*Tx, error) {
+	return db.beginCommon(ctx)
+}
+
+func (db *DB) beginCommon(ctx context.Context) (*Tx, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	tx, err := db.DB.BeginTxx(ctx, nil)
 	if err != nil {
 		if dat.Strict {
 			logger.Fatal("Could not create transaction")
