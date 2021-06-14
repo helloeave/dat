@@ -83,6 +83,18 @@ func (tx *Tx) Begin() (*Tx, error) {
 	return tx, nil
 }
 
+func (tx *Tx) BeginContext(_ context.Context) (*Tx, error) {
+	tx.Lock()
+	defer tx.Unlock()
+	if tx.IsRollbacked {
+		return nil, ErrTxRollbacked
+	}
+
+	logger.Debug("begin nested tx")
+	tx.pushState()
+	return tx, nil
+}
+
 // Commit commits the transaction
 func (tx *Tx) Commit() error {
 	tx.Lock()
