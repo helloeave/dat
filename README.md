@@ -819,6 +819,14 @@ Interpolation provides these benefits:
 Read [SQL Interpolation](https://github.com/mgutz/dat/wiki/Local-Interpolation) in wiki
 for more details and SQL injection.
 
+## Testing
+
+```
+GO111MODULE=off go get gopkg.in/godo.v2/cmd/godo
+godo createdb
+godo test
+```
+
 ## LICENSE
 
 [The MIT License (MIT)](https://github.com/mgutz/dat/blob/master/LICENSE)

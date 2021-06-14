@@ -1,6 +1,7 @@
 package runner
 
 import (
+	"context"
 	"testing"
 
 	"github.com/helloeave/dat/dat"
@@ -173,6 +174,27 @@ func TestSelectQueryScalar(t *testing.T) {
 	assert.True(t, id > 0)
 }
 
+func TestSelectQueryScalarContext(t *testing.T) {
+	s := beginTxWithFixtures()
+	defer s.AutoRollback()
+
+	var name string
+	err := s.
+		Select("name").
+		From("people").
+		Where("email = 'john@acme.com'").
+		QueryScalarContext(context.Background(), &name)
+
+	assert.NoError(t, err)
+	assert.Equal(t, name, "John")
+
+	var id int64
+	err = s.Select("id").From("people").Limit(1).QueryScalarContext(context.Background(), &id)
+
+	assert.NoError(t, err)
+	assert.True(t, id > 0)
+}
+
 func TestSelectQuerySlice(t *testing.T) {
 	s := beginTxWithFixtures()
 	defer s.AutoRollback()
@@ -186,6 +208,25 @@ func TestSelectQuerySlice(t *testing.T) {
 
 	var ids []int64
 	err = s.Select("id").From("people").Limit(1).QuerySlice(&ids)
+
+	assert.NoError(t, err)
+	assert.Equal(t, len(ids), 1)
+	assert.Equal(t, ids, []int64{1})
+}
+
+func TestSelectQuerySliceContext(t *testing.T) {
+	s := beginTxWithFixtures()
+	defer s.AutoRollback()
+
+	var names []string
+	err := s.Select("name").From("people").QuerySliceContext(context.Background(), &names)
+
+	assert.NoError(t, err)
+	assert.Equal(t, len(names), 6)
+	assert.Equal(t, names, []string{"Mario", "John", "Grant", "Tony", "Ester", "Reggie"})
+
+	var ids []int64
+	err = s.Select("id").From("people").Limit(1).QuerySliceContext(context.Background(), &ids)
 
 	assert.NoError(t, err)
 	assert.Equal(t, len(ids), 1)
