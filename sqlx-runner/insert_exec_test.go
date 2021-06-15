@@ -5,12 +5,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/homelight/dat/common"
-	"github.com/homelight/dat/dat"
-	"github.com/homelight/dat/postgres"
 	"github.com/lib/pq/hstore"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/stretchr/testify.v1/assert"
+
+	"github.com/homelight/dat/common"
+	"github.com/homelight/dat/dat"
+	"github.com/homelight/dat/postgres"
 )
 
 func TestInsertKeywordColumnName(t *testing.T) {

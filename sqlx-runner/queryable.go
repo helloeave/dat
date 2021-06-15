@@ -5,8 +5,9 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/homelight/dat/dat"
 	"github.com/jmoiron/sqlx"
+
+	"github.com/homelight/dat/dat"
 )
 
 // Queryable is an object that can be queried.

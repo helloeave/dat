@@ -4,8 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/homelight/dat/dat"
 	"gopkg.in/stretchr/testify.v1/assert"
+
+	"github.com/homelight/dat/dat"
 )
 
 func TestSelectQueryEmbedded(t *testing.T) {

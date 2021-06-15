@@ -4,9 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"gopkg.in/stretchr/testify.v1/assert"
-
 	"github.com/mgutz/jo/v1"
+	"gopkg.in/stretchr/testify.v1/assert"
 )
 
 func TestQueryObject(t *testing.T) {

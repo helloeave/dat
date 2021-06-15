@@ -3,8 +3,9 @@ package runner
 import (
 	"testing"
 
-	"github.com/homelight/dat/dat"
 	"gopkg.in/stretchr/testify.v1/assert"
+
+	"github.com/homelight/dat/dat"
 )
 
 func TestConnectionExec(t *testing.T) {

@@ -3,9 +3,8 @@ package dat
 import (
 	"testing"
 
-	"gopkg.in/stretchr/testify.v1/assert"
-
 	"github.com/mgutz/str"
+	"gopkg.in/stretchr/testify.v1/assert"
 )
 
 func BenchmarkSelectBasicSql(b *testing.B) {

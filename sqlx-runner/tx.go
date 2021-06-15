@@ -7,8 +7,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/homelight/dat/dat"
 	"github.com/jmoiron/sqlx"
+
+	"github.com/homelight/dat/dat"
 )
 
 const (

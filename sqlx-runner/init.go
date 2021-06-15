@@ -2,10 +2,11 @@ package runner
 
 import (
 	"database/sql"
-	"log"
 	"time"
 
 	"github.com/cenkalti/backoff"
+	log "github.com/mgutz/logxi/v1"
+
 	"github.com/homelight/dat/dat"
 	"github.com/homelight/dat/kvs"
 	"github.com/homelight/dat/postgres"

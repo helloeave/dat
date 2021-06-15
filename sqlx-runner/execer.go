@@ -6,8 +6,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/homelight/dat/dat"
 	"github.com/jmoiron/sqlx"
+
+	"github.com/homelight/dat/dat"
 )
 
 // Execer executes queries against a database.

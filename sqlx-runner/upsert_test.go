@@ -5,10 +5,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/homelight/dat/dat"
 	"github.com/lib/pq/hstore"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/stretchr/testify.v1/assert"
+
+	"github.com/homelight/dat/dat"
 )
 
 func TestUpsertReal(t *testing.T) {
