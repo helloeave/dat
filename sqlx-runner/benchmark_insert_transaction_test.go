@@ -3,7 +3,7 @@ package runner
 import (
 	"testing"
 
-	"github.com/helloeave/dat/dat"
+	"github.com/homelight/dat/dat"
 )
 
 // These benchmarks compare the total cost of interpolating the SQL then

@@ -6,7 +6,7 @@ import (
 
 	"github.com/mgutz/str"
 
-	"github.com/helloeave/dat/reflectx"
+	"github.com/homelight/dat/reflectx"
 )
 
 var fieldMapper = reflectx.NewMapperTagFunc("db", nil, nil)

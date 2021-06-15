@@ -12,8 +12,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/helloeave/dat/dat"
-	"github.com/helloeave/dat/kvs"
+	"github.com/homelight/dat/dat"
+	"github.com/homelight/dat/kvs"
 	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
 	guid "github.com/satori/go.uuid"
