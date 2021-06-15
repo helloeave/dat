@@ -1,13 +1,15 @@
 package runner
 
 import (
+	"context"
 	"errors"
 	"log"
 	"sync"
 	"time"
 
-	"github.com/helloeave/dat/dat"
 	"github.com/jmoiron/sqlx"
+
+	"github.com/homelight/dat/dat"
 )
 
 const (
@@ -46,7 +48,19 @@ func WrapSqlxTx(tx *sqlx.Tx) *Tx {
 
 // Begin creates a transaction for the given database
 func (db *DB) Begin() (*Tx, error) {
-	tx, err := db.DB.Beginx()
+	return db.beginCommon(context.Background())
+}
+
+func (db *DB) BeginContext(ctx context.Context) (*Tx, error) {
+	return db.beginCommon(ctx)
+}
+
+func (db *DB) beginCommon(ctx context.Context) (*Tx, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	tx, err := db.DB.BeginTxx(ctx, nil)
 	if err != nil {
 		if dat.Strict {
 			logger.Fatal("Could not create transaction")
@@ -59,6 +73,18 @@ func (db *DB) Begin() (*Tx, error) {
 
 // Begin returns this transaction
 func (tx *Tx) Begin() (*Tx, error) {
+	tx.Lock()
+	defer tx.Unlock()
+	if tx.IsRollbacked {
+		return nil, ErrTxRollbacked
+	}
+
+	logger.Debug("begin nested tx")
+	tx.pushState()
+	return tx, nil
+}
+
+func (tx *Tx) BeginContext(_ context.Context) (*Tx, error) {
 	tx.Lock()
 	defer tx.Unlock()
 	if tx.IsRollbacked {

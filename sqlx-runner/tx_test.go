@@ -2,6 +2,7 @@ package runner
 
 import (
 	// "database/sql"
+	"context"
 	"database/sql"
 	"testing"
 
@@ -259,4 +260,19 @@ func TestErrorInBeginIfRollbacked(t *testing.T) {
 
 	_, err = tx.Begin()
 	assert.Exactly(t, ErrTxRollbacked, err)
+}
+
+func TestTransactionContextRollbackReal(t *testing.T) {
+	installFixtures()
+
+	tx, err := testDB.BeginContext(context.Background())
+	assert.NoError(t, err)
+
+	var person Person
+	err = tx.Select("*").From("people").Where("email = $1", "john@acme.com").QueryStruct(&person)
+	assert.NoError(t, err)
+	assert.Equal(t, person.Name, "John")
+
+	err = tx.Rollback()
+	assert.NoError(t, err)
 }

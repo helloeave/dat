@@ -3,3 +3,5 @@ trace.log
 *.test
 godobin*
 vendor/
+
+builders_generated.go

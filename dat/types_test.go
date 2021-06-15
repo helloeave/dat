@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/lib/pq"
-
 	"gopkg.in/stretchr/testify.v1/assert"
 )
 

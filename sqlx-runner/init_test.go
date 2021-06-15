@@ -7,11 +7,11 @@ import (
 	"os"
 	"time"
 
-	"github.com/mgutz/logxi/v1"
+	log "github.com/mgutz/logxi/v1"
 
-	"github.com/helloeave/dat/dat"
-	"github.com/helloeave/dat/kvs"
-	"github.com/helloeave/dat/postgres"
+	"github.com/homelight/dat/dat"
+	"github.com/homelight/dat/kvs"
+	"github.com/homelight/dat/postgres"
 )
 
 var testDB *DB

@@ -3,8 +3,9 @@ package runner
 import (
 	"testing"
 
-	"github.com/helloeave/dat/dat"
 	"gopkg.in/stretchr/testify.v1/assert"
+
+	"github.com/homelight/dat/dat"
 )
 
 func TestRealJSON(t *testing.T) {

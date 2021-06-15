@@ -1,6 +1,9 @@
 package dat
 
-import "time"
+import (
+	"context"
+	"time"
+)
 
 // Result serves the same purpose as sql.Result. Defining
 // it for the package avoids tight coupling with database/sql.
@@ -15,13 +18,20 @@ type Execer interface {
 	Timeout(time.Duration) Execer
 	Interpolate() (string, []interface{}, error)
 	Exec() (*Result, error)
+	ExecContext(ctx context.Context) (*Result, error)
 
 	QueryScalar(destinations ...interface{}) error
+	QueryScalarContext(ctx context.Context, destinations ...interface{}) error
 	QuerySlice(dest interface{}) error
+	QuerySliceContext(ctx context.Context, dest interface{}) error
 	QueryStruct(dest interface{}) error
+	QueryStructContext(ctx context.Context, dest interface{}) error
 	QueryStructs(dest interface{}) error
+	QueryStructsContext(ctx context.Context, dest interface{}) error
 	QueryObject(dest interface{}) error
+	QueryObjectContext(ctx context.Context, dest interface{}) error
 	QueryJSON() ([]byte, error)
+	QueryJSONContext(ctx context.Context) ([]byte, error)
 }
 
 var nullExecer = &disconnectedExecer{}
@@ -43,6 +53,10 @@ func (nop *disconnectedExecer) Exec() (*Result, error) {
 	return nil, ErrDisconnectedExecer
 }
 
+func (nop *disconnectedExecer) ExecContext(_ context.Context) (*Result, error) {
+	return nil, ErrDisconnectedExecer
+}
+
 func (nop *disconnectedExecer) Interpolate() (string, []interface{}, error) {
 	return NewDatSQLErr(ErrDisconnectedExecer)
 }
@@ -52,8 +66,16 @@ func (nop *disconnectedExecer) QueryScalar(destinations ...interface{}) error {
 	return ErrDisconnectedExecer
 }
 
+func (nop *disconnectedExecer) QueryScalarContext(_ context.Context, destinations ...interface{}) error {
+	return ErrDisconnectedExecer
+}
+
 // QuerySlice panics when QuerySlice is called.
 func (nop *disconnectedExecer) QuerySlice(dest interface{}) error {
+	return ErrDisconnectedExecer
+}
+
+func (nop *disconnectedExecer) QuerySliceContext(_ context.Context, dest interface{}) error {
 	return ErrDisconnectedExecer
 }
 
@@ -62,8 +84,16 @@ func (nop *disconnectedExecer) QueryStruct(dest interface{}) error {
 	return ErrDisconnectedExecer
 }
 
+func (nop *disconnectedExecer) QueryStructContext(_ context.Context, dest interface{}) error {
+	return ErrDisconnectedExecer
+}
+
 // QueryStructs panics when QueryStructs is called.
 func (nop *disconnectedExecer) QueryStructs(dest interface{}) error {
+	return ErrDisconnectedExecer
+}
+
+func (nop *disconnectedExecer) QueryStructsContext(_ context.Context, dest interface{}) error {
 	return ErrDisconnectedExecer
 }
 
@@ -72,7 +102,15 @@ func (nop *disconnectedExecer) QueryObject(dest interface{}) error {
 	return ErrDisconnectedExecer
 }
 
+func (nop *disconnectedExecer) QueryObjectContext(_ context.Context, dest interface{}) error {
+	return ErrDisconnectedExecer
+}
+
 // QueryJSON panics when QueryJSON is called.
 func (nop *disconnectedExecer) QueryJSON() ([]byte, error) {
+	return nil, ErrDisconnectedExecer
+}
+
+func (nop *disconnectedExecer) QueryJSONContext(_ context.Context) ([]byte, error) {
 	return nil, ErrDisconnectedExecer
 }
